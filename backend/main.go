@@ -1,13 +1,30 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func sum(a, b int) int {
-	return a + b
+type entry struct {
+	ID string `json:"id"`
+	Value string `json:"value"`
+}
+
+var entries = []entry {
+	{ID: "1", Value: "12345"},
+	{ID: "2", Value: "Vyacheslav, где фронт?"},
+	{ID: "351", Value: "pukpuk"},
 }
 
 func main() {
-	fmt.Println("2 + 3 is", sum(2, 3))
+	router := gin.Default()
+	router.GET("/entries", getEntries)
+
+	router.Run("localhost:8080")
 }
+
+func getEntries(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, entries)
+}
+
