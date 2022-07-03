@@ -1,16 +1,18 @@
 version: '3.8'
 
 services:
-  minimal-login-page:
+  data-provider:
     build:
-      context: .
-    image: minimal-login-page
-    container_name: minimal-login-page
+      context: data-provider/
+      dockerfile: Dockerfile.dev
+    container_name: data-provider
     ports:
       - 8080:8080
     environment:
       - HTTP_PORT=8080
-      - GIN_MODE=release
+      - GIN_MODE=debug
+    volumes:
+      - ./data-provider:/app
     deploy:
       restart_policy:
         condition: on-failure

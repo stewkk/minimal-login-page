@@ -1,4 +1,4 @@
-module minimal-login-page/backend
+module minimal-login-page/backend/data-provider
 
 go 1.18
 
