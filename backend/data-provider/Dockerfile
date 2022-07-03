@@ -1,24 +1,37 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.18-buster AS build
+FROM golang:1.17-alpine AS base
+WORKDIR /src
+ENV CGO_ENABLED=0
+COPY go.* .
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
-WORKDIR /app
+FROM base AS build
+RUN --mount=target=. \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -o /out/data-provider .
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+FROM base AS unit-test
+RUN --mount=target=. \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    mkdir /out && go test -v -coverprofile=/out/cover.out ./...
 
-COPY *.go ./
-RUN go build -o /minimal-login-page
+FROM golangci/golangci-lint:v1.43-alpine AS lint-base
 
-FROM gcr.io/distroless/base-debian10
+FROM base AS lint
+RUN --mount=target=. \
+    --mount=from=lint-base,src=/usr/bin/golangci-lint,target=/usr/bin/golangci-lint \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/root/.cache/golangci-lint \
+    golangci-lint run --timeout 10m0s ./...
 
-WORKDIR /
+FROM scratch AS unit-test-coverage
+COPY --from=unit-test /out/cover.out /cover.out
 
-COPY --from=build /minimal-login-page /minimal-login-page
-
-EXPOSE 8080
-
-USER nonroot:nonroot
-
-ENTRYPOINT ["/minimal-login-page"]
+FROM golang:1.18-alpine
+COPY --from=build /out/data-provider /
+ENTRYPOINT "/data-provider"

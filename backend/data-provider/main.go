@@ -23,14 +23,20 @@ func main() {
 	router.GET("/entries", getEntries)
 	router.GET("/ping", ping)
 
-	router.SetTrustedProxies(nil)
+	err := router.SetTrustedProxies(nil)
+	if err != nil {
+		os.Exit(1)
+	}
 
 	port := os.Getenv("HTTP_PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	router.Run("0.0.0.0:" + port)
+	err = router.Run("0.0.0.0:" + port)
+	if err != nil {
+		os.Exit(1)
+	}
 }
 
 func getEntries(c *gin.Context) {
